@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+    <meta charset='utf-8' />
+    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
+    <meta name="description" content="Tortoise Interpreter (CPS) : " />
+
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+
+    <title>Tortoise Interpreter (CPS)</title>
+  </head>
+
+  <body>
+
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/lordlorik/nathansuniversity-lesson-8">View on GitHub</a>
+
+          <h1 id="project_title">Tortoise Interpreter (CPS)</h1>
+          <h2 id="project_tagline"></h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/lordlorik/nathansuniversity-lesson-8/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/lordlorik/nathansuniversity-lesson-8/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <p>Assignment for lesson 8 of PL101 at <a href="http://www.nathansuniversity.com/">http://www.nathansuniversity.com/</a>.</p>
+
+<p>Tortoise interpreter, continuation-passing style, with lots of goodies:</p>
+
+<ul>
+<li>if (&lt;cond&gt;) &lt;if_true&gt; else &lt;if_false&gt;</li>
+<li>while (&lt;cond&gt;) &lt;block&gt;</li>
+<li>return &lt;optional_expr&gt;;</li>
+<li>try &lt;block&gt; catch &lt;block&gt;;</li>
+<li>throw (is a primitive expression and takes no argument until now)</li>
+<li>numbers can have exponent, so now 31.41592e-1 is a valid format for numbers</li>
+<li>ternary inline-if operator: &lt;cond&gt; ? &lt;if_true&gt; : &lt;if_false&gt;</li>
+<li>ternary "chained" comparison operators: x &lt; y &lt; z is equivalent to
+x &lt; y &amp;&amp; y &lt; z, but y is evaluated only once. Valid for all comparison
+operators except != ==</li>
+<li>short-circuit boolean operators: &amp;&amp; ||, &amp;&amp; returns the right operand if
+the left operand is nonzero, else zero; || returns the left operand unless
+it's zero, and it's right operand if the left one is zero.</li>
+<li>unary operators: + - ! (boolean not)</li>
+<li>modulus operator: %</li>
+<li>power operator &lt;base&gt; ** &lt;exp&gt; (right-associative)</li>
+<li>alternate numeric format: #rrggbb or #rgb. Useful to set the color
+of the pen through the pen_color function.</li>
+<li>C-like single line comments: // comment</li>
+<li>turtle functions: forward, backward, left, right, set_heading, get_heading,
+set_position, get_position_x, get_position_y, home, clear, pen_up, pen_down,
+is_pen_down, set_ink, get_ink, set_paper, get_paper, set_pen_width,
+get_pen_width, set_pen_opacity, get_pen_opacity.</li>
+<li>math functions: abs, ceil, floor, round, log, exp, sqrt, pow, min, max,
+sin, cos, tan, asin, acos, atan, atan2 (trig functions work with degrees)</li>
+<li>math constants: e, pi</li>
+<li>C-like assign operators: += -= <em>= /= %= *</em>= ||= &amp;&amp;=</li>
+<li>optimized my parser using not-predicates to prevent excessive backtracking
+(the sample was too slow)</li>
+<li>corrected associativity of additive and multiplicative operators (they are
+left-associative, and in the sample they are right-associative)</li>
+<li>C-like convention regarding truth values: zero is false, anything else is
+true. The boolean not operator converts 0 to 1, and nonzero to 0.</li>
+<li>declaration and initialization through the extended syntax: var &lt;id&gt; := &lt;expr&gt;;</li>
+<li>constant declaration similar to var declaration with initialization, which
+is mandatory for constants: const &lt;id&gt; := &lt;expr&gt;;</li>
+<li>custom CodeMirror-based syntax highlighter for Tortoise</li>
+</ul>
+      </section>
+    </div>
+
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">Tortoise Interpreter (CPS) maintained by <a href="https://github.com/lordlorik">lordlorik</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
+  </body>
+</html>
