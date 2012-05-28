@@ -1,0 +1,216 @@
+{
+    var makeLeftAssociative = function (first, rest) {
+        var result = first,
+            len = rest.length;
+
+        for (var i = 0; i < len; ++i) {
+            var tmp = rest[i];
+
+            result = { tag: tmp[0], left: result, right: tmp[1] };
+        }
+        return  result;
+    };
+}
+
+start
+    = ws stmts: statements
+        { return stmts; }
+
+dec_digit = [0-9]
+hex_digit = [0-9a-fA-F]
+first_id_char = [a-zA-Z_]
+rest_id_char = [a-zA-Z0-9_]
+
+if_op = "?"
+else_op = ":"
+or_op = "||"
+and_op = "&&"
+comparative_op = "<=" / ">=" / "!=" / "==" / "<" / ">"
+comparative_op_left = "<=" / "<"
+comparative_op_right = ">=" / ">"
+additive_op = "+" / "-"
+multiplicative_op = "*" / "/" / "%"
+power_op = "**"
+assign_op = "+=" / "-=" / "*=" / "/=" / "%=" / "**=" / "||=" / "&&="
+blank "blank" = [ \r\n\t]
+comment "comment" = "//" [^\r\n]*
+
+blankOrComment =
+    blank
+    / comment
+
+ws = blankOrComment*
+ws1 = blankOrComment+
+
+number_frac
+    = "." digits: dec_digit*
+        { return '.' + digits.join(''); }
+
+number_exp
+    = [eE] sign: [+-]? digits: dec_digit*
+        { return 'e' + sign + digits.join(''); }
+
+number "number"
+    = digits: dec_digit+ frac: number_frac? exp: number_exp?
+        { return parseFloat(digits.join('') + frac + exp); }
+    / "#" d1: hex_digit d2: hex_digit d3: hex_digit d4: hex_digit d5: hex_digit d6: hex_digit
+        { return parseInt(d1 + d2 + d3 + d4 + d5 + d6, 16); }
+    / "#" d1: hex_digit d2: hex_digit d3: hex_digit
+        { return parseInt(d1 + d1 + d2 + d2 + d3 + d3, 16); }
+
+identifier "identifier"
+    = firstChar: first_id_char chars: rest_id_char*
+        { return firstChar + chars.join(''); }
+
+comma_identifier = "," ws v: identifier ws
+        { return v; }
+
+primary
+    = n: number ws
+        { return n; }
+    / "throw" ws
+        { return { tag: 'throw' }; }
+    / v: identifier ws "(" ws args: arg_list? ws ")" ws
+        { return { tag: 'call', name: v, args: args || [] }; }
+    / v: identifier ws
+        { return { tag: 'ident', name: v }; }
+    / "(" ws expr: expression ws ")" ws
+        { return expr; }
+    / "!" ws expr: primary
+        { return { tag: '!', arg: expr }; }
+    / "+" ws expr: primary
+        { return expr; }
+    / "-" ws n: number ws
+        { return -n; }
+    / "-" ws expr: primary
+        { return { tag: 'neg', arg: expr }; }
+
+arg_list
+    = first: expression rest: comma_expression*
+        { return [first].concat(rest); }
+
+ident_list
+    = first: identifier rest: comma_identifier*
+        { return [first].concat(rest); }
+
+expression
+    = inline_if
+
+comma_expression
+    = "," ws expr: expression
+        { return expr; }
+
+inline_if
+    = expr: or ! if_op
+        { return expr; }
+    / cond: or if_op ws ifTrue: or else_op ws ifFalse: inline_if
+        { return { tag: '? :', left: cond, middle: ifTrue, right: ifFalse }; }
+
+or
+    = expr: and ! or_op
+        { return expr; }
+    / first: and rest: or_term+
+        { return makeLeftAssociative(first, rest); }
+    / and
+
+or_term
+    = op: or_op ws expr: and
+        { return [op, expr]; }
+
+and
+    = expr: comparative ! and_op
+        { return expr; }
+    / first: comparative rest: and_factor+
+        { return makeLeftAssociative(first, rest); }
+    / comparative
+
+and_factor
+    = op: and_op ws expr: comparative
+        { return [op, expr]; }
+
+comparative
+    = expr: additive ! comparative_op
+        { return expr; }
+    / left: additive op1: comparative_op_left ws middle: additive op2: comparative_op_left ws right: additive
+        { return { tag: op1 + ' ' + op2, left: left, middle: middle, right: right }; }
+    / left: additive op1: comparative_op_right ws middle: additive op2: comparative_op_right ws right: additive
+        { return { tag: op1 + ' ' + op2, left: left, middle: middle, right: right }; }
+    / left: additive op: comparative_op ws right: additive
+        { return { tag: op, left: left, right: right }; }
+    / additive
+
+additive
+    = expr: multiplicative ! additive_op
+        { return expr; }
+    / first: multiplicative rest: additive_term+
+        { return makeLeftAssociative(first, rest); }
+    / multiplicative
+
+additive_term
+    = op: additive_op ws expr: multiplicative
+        { return [op, expr]; }
+
+multiplicative
+    = expr: power ! multiplicative_op
+        { return expr; }
+    / first: power rest: multiplicative_factor+
+        { return makeLeftAssociative(first, rest); }
+    / power
+
+multiplicative_factor
+    = op: multiplicative_op ws expr: power
+        { return [op, expr]; }
+
+power
+    = expr: primary ! power_op
+        { return expr; }
+    / left: primary op: power_op ws right: power
+        { return { tag: op, left: left, right: right}; }
+    / primary
+
+block
+    = "{" ws body: statements "}" ws
+        { return body; }
+    / body: statement
+        { return [body]; }
+
+else_part
+    = "else" ws body: block
+        { return body; }
+
+initialization_part
+    = ":=" ws expr: expression
+        { return expr; }
+
+statement
+    = "define" ws1 v: identifier ws "(" ws args: ident_list? ")" ws body: block
+        { return { tag: 'define', name: v, args: args || [], body: body }; }
+    / "var" ws1 v: identifier ws init: initialization_part? ";" ws
+        { return { tag: 'var', name: v, body: init }; }
+    / "const" ws1 v: identifier ws init: initialization_part ";" ws
+        { return { tag: 'const', name: v, body: init }; }
+    / "if" ws "(" ws expr: expression ")" ws body: block elseBody: else_part?
+        { return { tag: 'if', expr: expr, body: body, body2: elseBody }; }
+    / "while" ws "(" ws expr: expression ")" ws body: block
+        { return { tag: 'while', expr: expr, body: body }; }
+    / "repeat" ws "(" ws expr: expression ")" ws body: block
+        { return { tag: 'repeat', expr: expr, body: body }; }
+    / "return" !rest_id_char expr: expression? ";" ws
+        { return { tag: 'return', expr: expr || { tag: 'undef' } }; }
+    / "return" ws1 expr: expression? ";" ws
+        { return { tag: 'return', expr: expr || { tag: 'undef' } }; }
+    / "try" ! rest_id_char body: block "catch" ws catchBody: block
+        { return { tag: 'try', body: body, body2: catchBody }; }
+    / "try" ws1 body: block "catch" ws catchBody: block
+        { return { tag: 'try', body: body, body2: catchBody }; }
+    / "{" ws stmts: statements "}" ws
+        { return { tag: 'block', body: stmts }; }
+    / v: identifier ws op: assign_op ws expr: expression ";" ws
+        { return { tag: ':=', left: v, right: { tag: op.replace('=', ''), left: { tag: 'ident', name: v }, right: expr } }; }
+    / v: identifier ws ":=" ws expr: expression ";" ws
+        { return { tag: ':=', left: v, right: expr }; }
+    / expr: expression ";" ws
+        { return { tag: 'ignore', body: expr }; }
+
+statements = stmts: statement*
+    { return stmts; }
