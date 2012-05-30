@@ -118,26 +118,41 @@ tortoise = (function (undefined) {
         return [f.call(null, expr, env, thunkValue, function (x) { throw('Unhandled exception: ' + x); }), false];
     };
 
+    var stepStartExt = function (stmts, env) {
+        if (env && !env.bindings) env = { bindings: env };
+        if (!env) env = { bindings: {} }
+        env.outer = {
+            bindings: builtinFunctions
+        };
+
+        return stepStart(evalStatements, stmts, env);
+    };
+
     var step = function (state) {
         var thk = state[0];
 
         if (thk[0] === thkThunk) {
-            state[0] = thk[1].apply(null, thk[2]);
+            return !(state[0] = thk[1].apply(null, thk[2]));
         }
         else if (thk[0] === thkVal) {
             state[0] = thk[1];
-            state[1] = true;
+            return state[1] = true;
         }
         else {
             throw('Bad thunk');
         }
     };
 
-    var evalFull = function (f, expr, env) {
-        var state = stepStart(f, expr, env);
+    var stepEnd = function (state) {
+        return state[1] && state[0] || null;
+    };
 
-        while (!state[1]) step(state);
-        return state[0];
+    var evalFull = function (f, expr, env) {
+        var thk = stepStart(f, expr, env)[0];
+
+        while (thk[0] === thkThunk) thk = thk[1].apply(null, thk[2]);
+        if (thk[0] === thkVal) return thk[1];
+        throw('Bad thunk');
     };
 
     var doUnaryOp = function (expr, env, cont, xcont, op) {
@@ -301,7 +316,7 @@ tortoise = (function (undefined) {
                     return thunk(cont, [breaker, v]);
                 }, xcont);
 
-            // Return
+            // Try/Catch
             case 'try':
                 return thunk(evalStatements, stmt.body, env, cont, function (ex) {
                     return thunk(evalStatements, stmt.body2, env, cont, xcont);
@@ -414,6 +429,9 @@ tortoise = (function (undefined) {
     return {
         eval: eval,
         evalTortoise: evalTortoise,
+        stepStart: stepStartExt,
+        step: step,
+        stepEnd: stepEnd,
         addBindingConst: addBindingConst,
         addBindingVar: addBindingVar,
         addBindingFunc: addBindingFunc

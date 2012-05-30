@@ -17,7 +17,7 @@
     table { width: 100%; }
     #editor { border: 2px solid #555; border-radius: 3px; min-width: 90%; max-width: 1000px; float: left; position: relative; }
     #buttons { float: left; position: relative; clear: right; }
-    #buttons input { width: 5em; margin-left: 1em; }
+    #buttons input { width: 6em; margin-left: 1em; }
     #turtlecanvas { width: 45%; height: 500px; float: left; border: 1px solid #000; }
     #console { padding: 0 1em; margin-left: 1em; border: solid 1px; border-radius: 5px; font-family: Consolas, Courier New, monospace; width: 50%; height: 500px; float: left; clear: right; overflow: auto; }
     #turtlecanvas, #console { margin-top: 1em; }
@@ -66,6 +66,9 @@ polygon(3, radius, #a0a);
 </div>
 <div id="buttons">
     <input id="runButton" type="button" value="Run" /><br />
+    <input id="stepButton" type="button" value="1 Step" /><br />
+    <input id="10stepsButton" type="button" value="10 Steps" /><br />
+    <input id="100stepsButton" type="button" value="100 Steps" /><br />
     <input id="clearButton" type="button" value="Clear" />
 </div>
 <div id="turtlecanvas"></div>
@@ -87,6 +90,8 @@ polygon(3, radius, #a0a);
         var myTurtle = new Turtle('turtlecanvas');
         var colorToArray = function (c) { return [(c >> 16) & 255, (c >> 8) & 255, c & 255]; };
         var paper = '#ffffff';
+        var cont = null;
+        var contSteps = 0;
 
         tortoise.addBindingFunc('forward', function (d) { myTurtle.forward(d); }, 1);
         tortoise.addBindingFunc('backward', function (d) { myTurtle.forward(-d); }, 1);
@@ -111,6 +116,42 @@ polygon(3, radius, #a0a);
         tortoise.addBindingFunc('set_pen_opacity', function (o) { myTurtle.setOpacity(o); }, 1);
         tortoise.addBindingFunc('get_pen_opacity', function () { return myTurtle.opacity; }, 0);
 
+        var doStep = function () {
+            log('> STEP');
+            if (cont === null) {
+                var input = myCodeMirror.getValue();
+
+                log(input);
+                try {
+                    var parsed = tortoiseParser.parse(input);
+
+                    log('<< PARSED ' + JSON.stringify(parsed) + ' >>');
+                    try {
+                        cont = tortoise.stepStart(parsed);
+                        contSteps = 1;
+                    }
+                    catch (e) {
+                        log('> ERROR ' + e);
+                    }
+                }
+                catch (e) {
+                    log('> ERROR ' + e);
+                }
+            }
+            else {
+                ++contSteps;
+                if (tortoise.step(cont)) {
+                    log('> ' + JSON.stringify(tortoise.stepEnd(cont)));
+                    log('> TOTAL STEPS: ' + contSteps);
+
+                    cont = null;
+                    $('#stepButton, #10stepsButton, #100stepsButton').attr('disabled', true);
+                    return false;
+                }
+            }
+            return true;
+        };
+
         $('#runButton').click(function() {
             var input = myCodeMirror.getValue();
 
@@ -132,9 +173,14 @@ polygon(3, radius, #a0a);
                 log('> ERROR ' + e);
             }
         });
+        $('#stepButton').click(doStep);
+        $('#10stepsButton').click(function () { for (var i = 0; i < 10; ++i) if (!doStep()) break; });
+        $('#100stepsButton').click(function () { for (var i = 0; i < 100; ++i) if (!doStep()) break; });
         $('#clearButton').click(function() {
             $('#console').html('');
+            $('#stepButton, #10stepsButton, #100stepsButton').attr('disabled', false);
             myTurtle.clear();
+            cont = null;
             log('WELCOME!');
         }).click();
     });
